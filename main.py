@@ -1,13 +1,8 @@
-import re
 import os
+import re
 
-
-diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-
-caminho_arquivo = os.path.join(diretorio_atual, 'nome_do_arquivo.txt')
-
-def ler_arquivo(caminho_arquivo):
-    with open(caminho_arquivo, 'r') as arquivo:
+def ler_arquivo(caminho):
+    with open(caminho, 'r') as arquivo:
         return arquivo.read()
 def automato_atribuicao(expressao):
     # Definindo estados
@@ -83,7 +78,14 @@ def avaliar_atribuicao(expressao):
     else:
         print("A atribuição está incorreta.")
 
-# Exemplo de uso
-caminho_arquivo = 'caminho/do/seu/arquivo.txt'
+# Obtém o caminho do diretório atual
+diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+
+# Constrói o caminho completo para o arquivo de texto
+caminho_arquivo = os.path.join(diretorio_atual, 'teste.txt')
+
+# Lê o conteúdo do arquivo
 expressao_do_arquivo = ler_arquivo(caminho_arquivo)
+
+# Avalia a atribuição
 avaliar_atribuicao(expressao_do_arquivo)
