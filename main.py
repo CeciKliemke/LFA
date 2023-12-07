@@ -1,3 +1,6 @@
+import re
+from sympy import symbols, sympify
+
 def automato_atribuicao(expressao):
     estados = {
         'q0': 0,  # Estado inicial
@@ -44,6 +47,7 @@ def automato_atribuicao(expressao):
 
     return estado_atual == estados['q5']
 
+
 def avaliar_atribuicao(expressao):
     linhas = expressao.split('\n')
 
@@ -53,14 +57,18 @@ def avaliar_atribuicao(expressao):
         identificadores[nome.strip()] = float(valor)
 
     atribuicao = linhas[-2]
-    if automato_atribuicao(atribuicao):
-        for nome, valor in identificadores.items():
-            atribuicao = re.sub(rf'\b{nome}\b', str(valor), atribuicao)
 
-        resultado = eval(atribuicao)
+    for nome, valor in identificadores.items():
+        atribuicao = re.sub(rf'\b{nome}\b', str(valor), atribuicao)
+
+    try:
+        # Usar sympify para avaliar a expressão
+        resultado = sympify(atribuicao)
+
         print(f"A atribuição está correta. Resultado: {resultado}")
-    else:
-        print("A atribuição está incorreta.")
+    except Exception as e:
+        print(f"A atribuição está incorreta. Erro: {e}")
+
 
 # Exemplo de uso:
 expressao_exemplo = """bola = 10
