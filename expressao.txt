@@ -1,0 +1,5 @@
+bola = 10
+x = 5
+casa = 2
+
+bola=32+x*casa;
