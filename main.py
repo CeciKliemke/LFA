@@ -1,7 +1,8 @@
 import re
-from sympy import symbols, sympify
+from sympy import sympify, SympifyError
 
-def automato_atribuicao(expressao):
+def criar_automato():
+    """Cria e retorna o autômato finito determinístico."""
     estados = {
         'q0': 0,  # Estado inicial
         'q1': 1,  # Identificador
@@ -14,33 +15,26 @@ def automato_atribuicao(expressao):
     transicoes = {
         0: {'letra': 1},
         1: {'letra': 1, 'digito': 1, '_': 1, 'espaco': 2},
-        2: {'=': 3},
-        3: {'digito': 4, 'letra': 4},
+        2: {'espaco': 2, '=': 3},
+        3: {'digito': 4, 'letra': 4, 'espaco': 3},
         4: {'digito': 4, 'letra': 4, 'op_arit': 4, 'pv': 5, 'espaco': 5},
         5: {'espaco': 5},
     }
 
+    return estados, transicoes
+
+def automato_atribuicao(expressao, estados, transicoes):
+    """Verifica se a expressão segue o padrão definido pelo autômato."""
     estado_atual = estados['q0']
 
     for char in expressao:
-        if char.isalpha():
-            categoria = 'letra'
-        elif char.isdigit():
-            categoria = 'digito'
-        elif char == '_':
-            categoria = '_'
-        elif char == '=':
-            categoria = '='
-        elif char in ('+', '-', '*', '/'):
-            categoria = 'op_arit'
-        elif char == ';':
-            categoria = 'pv'
-        elif char.isspace():
-            categoria = ' '
-        else:
-            raise ValueError(f"Caractere inválido na expressão: {char}")
+        if estado_atual == estados['q5']:
+            break  # Sai do loop se o estado final for alcançado
 
-        if categoria not in transicoes[estado_atual]:
+        categoria = obter_categoria(char)
+
+        if estado_atual not in transicoes or categoria not in transicoes[estado_atual]:
+            print(f"DEBUG: Estado atual: {estado_atual}, Categoria: {categoria}, Caractere: {char}")
             raise ValueError(f"Transição inválida do estado {estado_atual} com o caractere {char}")
 
         estado_atual = transicoes[estado_atual][categoria]
@@ -48,33 +42,64 @@ def automato_atribuicao(expressao):
     return estado_atual == estados['q5']
 
 
+
+def obter_categoria(char):
+    """Obtém a categoria do caractere."""
+    if char.isalpha():
+        return 'letra'
+    elif char.isdigit():
+        return 'digito'
+    elif char == '_':
+        return '_'
+    elif char == '=':
+        return '='
+    elif char in ('+', '-', '*', '/'):
+        return 'op_arit'
+    elif char == ';':
+        return 'pv'
+    elif char.isspace():
+        return 'espaco'
+    else:
+        raise ValueError(f"Caractere inválido na expressão: {char}")
+
 def avaliar_atribuicao(expressao):
+    """Avalia a atribuição e imprime o resultado."""
     linhas = expressao.split('\n')
 
     identificadores = {}
-    for linha in linhas[:-2]:
-        nome, valor = linha.split('=')
-        identificadores[nome.strip()] = float(valor)
+    for linha in linhas[:-1]:  # Processa todas as linhas, exceto a última
+        if '=' in linha:
+            nome, valor = linha.split('=')
+            identificadores[nome.strip()] = float(valor.strip())
 
-    atribuicao = linhas[-2]
+    # A última linha é a expressão a ser avaliada
+    atribuicao = linhas[-1].split('=')[-1]  # Pega apenas a expressão após o '='
+    atribuicao = atribuicao.rstrip(';')  # Remove o ponto e vírgula final
 
+    # Substitui os identificadores na expressão pela sua respectiva atribuição
     for nome, valor in identificadores.items():
         atribuicao = re.sub(rf'\b{nome}\b', str(valor), atribuicao)
 
     try:
-        # Usar sympify para avaliar a expressão
         resultado = sympify(atribuicao)
-
         print(f"A atribuição está correta. Resultado: {resultado}")
-    except Exception as e:
+    except SympifyError as e:
         print(f"A atribuição está incorreta. Erro: {e}")
 
 
 # Exemplo de uso:
-expressao_exemplo = """bola = 10
-x = 5
-casa = 2
+expressao_exemplo = """cubo = 6
+triangulo = 3
+pentagono = 5
+arminha = 17
 
-bola=32+x*casa;"""
+petangono=14+triangulo/3-cubo+arminha;"""
 
-avaliar_atribuicao(expressao_exemplo)
+# Criar o autômato
+estados, transicoes = criar_automato()
+
+# Verificar se a expressão segue o padrão do autômato
+if automato_atribuicao(expressao_exemplo, estados, transicoes):
+    avaliar_atribuicao(expressao_exemplo)
+else:
+    print("A expressão não segue o padrão definido pelo autômato.")
