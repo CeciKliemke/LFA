@@ -2,14 +2,14 @@ import re
 from sympy import sympify, SympifyError
 
 def criar_automato():
-    """Cria e retorna o autômato finito determinístico."""
+    # Definindo os estados e transições do autômato
     estados = {
-        'q0': 0,  # Estado inicial
-        'q1': 1,  # Identificador
-        'q2': 2,  # Operador de atribuição '='
-        'q3': 3,  # Número
-        'q4': 4,  # Operador aritmético
-        'q5': 5   # Estado final
+        'q0': 0,
+        'q1': 1,
+        'q2': 2,
+        'q3': 3,
+        'q4': 4,
+        'q5': 5
     }
 
     transicoes = {
@@ -24,28 +24,35 @@ def criar_automato():
     return estados, transicoes
 
 def automato_atribuicao(expressao, estados, transicoes):
-    """Verifica se a expressão segue o padrão definido pelo autômato."""
-    estado_atual = estados['q0']
+    # Removendo espaços em branco no início da expressão
+    expressao = expressao.lstrip()
 
+    # Verificando se a expressão começa com um identificador
+    if not expressao or not expressao[0].isalpha() or not expressao[0].islower():
+        raise ValueError("A expressão deve começar com um identificador.")
+
+    estado_atual = estados['q0']
     for char in expressao:
         if estado_atual == estados['q5']:
-            break  # Sai do loop se o estado final for alcançado
+            break
 
         categoria = obter_categoria(char)
 
+        # Verificando se a transição é válida
         if estado_atual not in transicoes or categoria not in transicoes[estado_atual]:
-            print(f"DEBUG: Estado atual: {estado_atual}, Categoria: {categoria}, Caractere: {char}")
             raise ValueError(f"Transição inválida do estado {estado_atual} com o caractere {char}")
 
         estado_atual = transicoes[estado_atual][categoria]
 
+    # Verificando se a expressão termina com ponto e vírgula
+    if expressao.strip()[-1] != ';':
+        raise ValueError("A expressão deve terminar com ponto e vírgula (;)")
+
     return estado_atual == estados['q5']
 
-
-
 def obter_categoria(char):
-    """Obtém a categoria do caractere."""
-    if char.isalpha():
+    # Determinando a categoria do caractere
+    if char.islower():  # Verifica se é uma letra minúscula
         return 'letra'
     elif char.isdigit():
         return 'digito'
@@ -63,20 +70,27 @@ def obter_categoria(char):
         raise ValueError(f"Caractere inválido na expressão: {char}")
 
 def avaliar_atribuicao(expressao):
-    """Avalia a atribuição e imprime o resultado."""
+    # Dividindo as linhas da expressão
     linhas = expressao.split('\n')
 
     identificadores = {}
-    for linha in linhas[:-1]:  # Processa todas as linhas, exceto a última
+    for linha in linhas[:-1]:
+        # Processando as linhas exceto a última
         if '=' in linha:
             nome, valor = linha.split('=')
             identificadores[nome.strip()] = float(valor.strip())
 
-    # A última linha é a expressão a ser avaliada
-    atribuicao = linhas[-1].split('=')[-1]  # Pega apenas a expressão após o '='
-    atribuicao = atribuicao.rstrip(';')  # Remove o ponto e vírgula final
+    # A última linha é a atribuição
+    atribuicao = linhas[-1]
 
-    # Substitui os identificadores na expressão pela sua respectiva atribuição
+    # Verificando se a atribuição começa com um identificador válido
+    if not atribuicao or not atribuicao[0].isalpha() or not atribuicao[0].islower():
+        raise ValueError("A atribuição deve começar com um identificador.")
+
+    # Removendo o identificador e o sinal de igual da atribuição
+    atribuicao = atribuicao.split('=')[-1]
+    atribuicao = atribuicao.rstrip(';')
+
     for nome, valor in identificadores.items():
         atribuicao = re.sub(rf'\b{nome}\b', str(valor), atribuicao)
 
@@ -86,20 +100,22 @@ def avaliar_atribuicao(expressao):
     except SympifyError as e:
         print(f"A atribuição está incorreta. Erro: {e}")
 
+def executar_expressao_arquivo(nome_arquivo):
+    try:
+        with open(nome_arquivo, 'r') as arquivo:
+            expressao = arquivo.read()
 
-# Exemplo de uso:
-expressao_exemplo = """cubo = 6
-triangulo = 3
-pentagono = 5
-arminha = 17
+        estados, transicoes = criar_automato()
 
-petangono=14+triangulo/3-cubo+arminha;"""
+        if automato_atribuicao(expressao, estados, transicoes):
+            avaliar_atribuicao(expressao)
+        else:
+            print("A expressão não segue o padrão definido pelo autômato.")
 
-# Criar o autômato
-estados, transicoes = criar_automato()
+    except FileNotFoundError:
+        print(f"O arquivo {nome_arquivo} não foi encontrado.")
+    except Exception as e:
+        print(f"Ocorreu um erro: {e}")
 
-# Verificar se a expressão segue o padrão do autômato
-if automato_atribuicao(expressao_exemplo, estados, transicoes):
-    avaliar_atribuicao(expressao_exemplo)
-else:
-    print("A expressão não segue o padrão definido pelo autômato.")
+# Executando a expressão do arquivo "expressao.txt"
+executar_expressao_arquivo("expressao.txt")
